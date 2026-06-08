@@ -1,15 +1,3 @@
-#
-# https://github.com/P3TERX/Actions-OpenWrt
-#
-# File: .github/workflows/openwrt-bulder.yml
-# Description: Build OpenWrt using GitHub Actions
-#
-# Copyright (c) 2019-2024 P3TERX <https://p3terx.com>
-#
-# This is free software, licensed under the MIT License.
-# See /LICENSE for more information.
-#
-
 name: OpenWrt Builder
 
 on:
@@ -17,7 +5,7 @@ on:
   workflow_dispatch:
 
 env:
-  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_URL: https://github.com
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
@@ -36,23 +24,18 @@ jobs:
     - name: Checkout
       uses: actions/checkout@main
 
-    - name: Create Swap Space (Fix Permission Denied)
+    - name: Initialization Environment & Fix Swap
+      env:
+        DEBIAN_FRONTEND: noninteractive
       run: |
-        # 提前在根目录创建文件并赋予完全权限，彻底堵死后续脚本的权限报错
-        sudo touch /swapfile
-        sudo chmod 777 /swapfile
-        
-        # 同时在安全目录下建立真正的 12G 虚拟内存，确保编译不爆内存
+        # 1. 在安全的有写入权限的用户目录下强制建立 12G 虚拟内存，确保编译不爆内存
         sudo dd if=/dev/zero of=/home/runner/swapfile bs=1M count=12288
         sudo chmod 600 /home/runner/swapfile
         sudo mkswap /home/runner/swapfile
         sudo swapon /home/runner/swapfile
         sudo sysctl vm.swappiness=10
 
-    - name: Initialization environment
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
+        # 2. 清理多余环境组件，释放硬盘空间
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
         sudo docker image prune --all --force
         sudo -E apt-get -qq update
@@ -115,13 +98,6 @@ jobs:
       if: (!cancelled())
       run: df -hT
 
-    - name: Upload bin directory
-      uses: actions/upload-artifact@main
-      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
-      with:
-        name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: openwrt/bin
-
     - name: Organize files
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
@@ -155,18 +131,3 @@ jobs:
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
         files: ${{ env.FIRMWARE }}/*
-
-    - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@main
-      with:
-        retain_days: 0
-        keep_minimum_runs: 2
-
-    - name: Remove old Releases
-      uses: dev-drprasad/delete-older-releases@master
-      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
-      with:
-        keep_latest: 3
-        delete_tags: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
