@@ -18,3 +18,12 @@ echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.defau
 #echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
 echo 'src-git passwall https://github.com' >>feeds.conf.default
 echo 'src-git openclash https://github.com' >>feeds.conf.default
+# 默认集成 PassWall 2 和相关依赖
+echo 'CONFIG_PACKAGE_luci-app-passwall=y' >> .config
+echo 'CONFIG_PACKAGE_luci-app-passwall_Nftables_Filtering=y' >> .config
+
+# 默认集成 OpenClash 
+echo 'CONFIG_PACKAGE_luci-app-openclash=y' >> .config
+
+# 默认集成 N100 的 Intel i226-V 网卡驱动
+echo 'CONFIG_PACKAGE_kmod-igc=y' >> .config
