@@ -36,6 +36,14 @@ jobs:
     - name: Checkout
       uses: actions/checkout@main
 
+    - name: Create Swap Space (Fix Permission Denied)
+      run: |
+        sudo dd if=/dev/zero of=/home/runner/swapfile bs=1M count=12288
+        sudo chmod 600 /home/runner/swapfile
+        sudo mkswap /home/runner/swapfile
+        sudo swapon /home/runner/swapfile
+        sudo sysctl vm.swappiness=10
+
     - name: Initialization environment
       env:
         DEBIAN_FRONTEND: noninteractive
@@ -131,7 +139,6 @@ jobs:
       run: |
         echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         touch release.txt
-        [ ${UPLOAD_GOFILE} = true && ${{ steps.gofile.outputs.url }} ] && echo "🔗 [GoFile](${{ steps.gofile.outputs.url }})" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to release
