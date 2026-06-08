@@ -38,6 +38,11 @@ jobs:
 
     - name: Create Swap Space (Fix Permission Denied)
       run: |
+        # 提前在根目录创建文件并赋予完全权限，彻底堵死后续脚本的权限报错
+        sudo touch /swapfile
+        sudo chmod 777 /swapfile
+        
+        # 同时在安全目录下建立真正的 12G 虚拟内存，确保编译不爆内存
         sudo dd if=/dev/zero of=/home/runner/swapfile bs=1M count=12288
         sudo chmod 600 /home/runner/swapfile
         sudo mkswap /home/runner/swapfile
